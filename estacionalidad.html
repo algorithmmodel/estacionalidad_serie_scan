@@ -1,0 +1,1031 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estacionalidad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ground:#F2F5F9;
+    --surface:#FFFFFF;
+    --ink:#0A1F3C;        /* navy casi negro */
+    --ink-2:#3D5578;      /* contraste alto, legible */
+    --ink-3:#5B7099;
+    --rule:#CFD9E6;
+    --rule-2:#E6ECF3;
+    --navy:#1E3A8A;
+    --navy-fill:#1E3A8A26;
+    --red:#9B2C2C;
+    --red-fill:#9B2C2C26;
+    --verde:#15803D;
+    --rojo:#B91C1C;
+    --pos:var(--navy);
+    --neg:var(--red);
+    --pos-fill:var(--navy-fill);
+    --neg-fill:var(--red-fill);
+    --sans:'Instrument Sans',system-ui,-apple-system,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--ground);color:var(--ink);font-family:var(--sans);
+    font-size:16px;line-height:1.45;padding:18px 12px 60px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:520px;margin:0 auto}
+
+  .masthead{text-align:center;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:18px}
+  .masthead h1{font-size:25px;font-weight:700;letter-spacing:.16em}
+  .masthead .sub{font-size:13px;color:var(--ink-2);margin-top:6px;font-family:var(--mono)}
+
+  .tabs{display:flex;gap:2px;margin:0 auto 16px;background:var(--rule-2);padding:3px;border-radius:9px;width:100%;max-width:260px}
+  .tab{flex:1;font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:.1em;
+    padding:9px 0;border:0;border-radius:6px;background:transparent;color:var(--ink-2);cursor:pointer}
+  .tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px #07161e22}
+  .tab:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  .panel{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px;margin-bottom:16px}
+  .grid{display:grid;gap:10px;grid-template-columns:1fr}
+  @media(min-width:480px){.grid.g3{grid-template-columns:2fr 1fr auto}.grid.g4{grid-template-columns:1fr 1fr 1fr .6fr auto}}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:11px;font-weight:700;letter-spacing:.09em;color:var(--ink-2)}
+  input{font-family:var(--mono);font-size:16px;padding:11px;border:1px solid var(--rule);
+    border-radius:7px;background:var(--ground);color:var(--ink);width:100%}
+  input:focus{outline:2px solid var(--ink);outline-offset:-1px}
+  .btn{font-family:var(--sans);font-size:15px;font-weight:600;padding:12px 22px;border:0;border-radius:7px;
+    background:var(--ink);color:#fff;cursor:pointer;width:100%}
+  @media(min-width:480px){.btn{width:auto}}
+  .btn:disabled{opacity:.4}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule)}
+  .btn:focus-visible{outline:2px solid var(--pos);outline-offset:2px}
+  .hint{font-size:12px;color:var(--ink-2);margin-top:9px;line-height:1.45}
+
+  .card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .card-title{text-align:center;padding:16px 14px 12px;border-bottom:1.5px solid var(--ink)}
+  .card-title .t{font-size:23px;font-weight:700;letter-spacing:.1em}
+  .card-title .m{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-top:4px}
+
+  .verdict{padding:16px 14px;border-bottom:1px solid var(--rule-2)}
+  .vk{font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--ink-2);margin-bottom:5px}
+  .vl{font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+  .vl.wait{color:var(--pos)}.vl.now{color:var(--ink)}.vl.none{color:var(--ink-2)}
+  .vw{font-size:14px;color:var(--ink-2);margin-top:7px;line-height:1.5}
+
+  .ledger{display:grid;grid-template-columns:1fr 1fr 1fr;margin-top:13px;border:1px solid var(--rule);border-radius:7px;overflow:hidden}
+  .led{padding:8px 9px;border-right:1px solid var(--rule)}
+  .led:last-child{border-right:0;background:var(--ground)}
+  .led-k{font-size:9px;font-weight:700;letter-spacing:.05em;color:var(--ink-2);line-height:1.25}
+  .led-v{font-family:var(--mono);font-size:15px;font-weight:600;margin-top:3px}
+  .pos{color:var(--pos)}.neg{color:var(--neg)}
+
+  .resumen{padding:15px 14px;border-top:1px solid var(--rule-2);background:#FAFBFD}
+  .resumen h4{font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--ink-2);margin-bottom:9px}
+  .resumen p{font-size:14.5px;line-height:1.62;margin-bottom:10px;color:var(--ink)}
+  .resumen p:last-child{margin-bottom:0}
+  .resumen b{font-weight:600;font-family:var(--mono);font-size:13.5px}
+  .resumen r{display:block;font-weight:700;font-size:15.5px;color:var(--ink);margin-bottom:5px;letter-spacing:-.01em}
+  .chart{padding:10px 8px 4px}
+  svg{width:100%;height:auto;display:block;max-width:460px;margin:0 auto}
+  .legend{padding:2px 14px 12px;font-size:11px;color:var(--ink-2);line-height:1.5}
+  .legend .k{display:flex;gap:16px;margin-bottom:5px;font-weight:600;flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;border-radius:2px}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--rule)}
+  
+  .stat{padding:11px 14px;border-right:1px solid var(--rule-2);border-bottom:1px solid var(--rule-2)}
+  .stat-k{font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--ink-2);line-height:1.3}
+  .stat-v{font-family:var(--mono);font-size:19px;font-weight:600;margin-top:3px;letter-spacing:-.02em}
+  .stat-n{font-size:10px;color:var(--ink-3);margin-top:1px;line-height:1.3}
+
+  table{width:100%;border-collapse:collapse}
+  th{font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--ink-2);padding:7px 4px;
+    border-bottom:1.5px solid var(--ink);text-align:right;white-space:nowrap}
+  th:first-child{text-align:left;padding-left:14px}
+  td{font-family:var(--mono);font-size:14px;padding:5px 4px;border-bottom:1px solid var(--rule-2);text-align:right;white-space:nowrap}
+  td:first-child{text-align:left;padding-left:14px;color:var(--ink-2);font-size:13px}
+  td.bar{width:99%;padding-right:14px;padding-left:10px}
+  .barw{position:relative;height:13px}
+  .barw::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--rule)}
+  .barw b{position:absolute;top:5.5px;height:2.5px;display:block;border-radius:1px}
+  .barw b::after{content:"";position:absolute;top:-3px;width:8.5px;height:8.5px;border-radius:50%;background:inherit}
+  .barw b.sec{height:2px;opacity:.8}
+  .barw b.sec::after{top:-2.5px;width:7px;height:7px}
+  .barw b.p::after{right:-4px}
+  .barw b.n::after{left:-4px}
+
+  details{border-top:1px solid var(--rule)}
+  summary{padding:12px 14px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--ink-2);cursor:pointer;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"+ ";font-family:var(--mono)}
+  details[open] summary::before{content:"− "}
+  .method{padding:0 14px 14px;font-size:13px;color:var(--ink-2);line-height:1.55}
+  .method p{margin-bottom:9px}
+  .method b{color:var(--ink)}
+
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;border-top:1px solid var(--rule)}
+  .status{font-size:12px;color:var(--ink-2);margin-top:12px;font-family:var(--mono);line-height:1.5;text-align:center}
+  .err{color:var(--neg)}
+  .empty{padding:34px 14px;text-align:center;color:var(--ink-2);font-size:14px}
+</style>
+
+<div class="wrap">
+  <div class="masthead">
+    <h1>ESTACIONALIDAD</h1>
+    <div class="sub">Desvío del precio contra su propia tendencia, por día del año</div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="scan">SCAN</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="serie">SERIE</button>
+  </div>
+
+  <section id="pane-scan">
+    <div class="panel">
+      <div class="grid g3">
+        <div class="field"><label for="s-tick">TICKERS</label><input id="s-tick" value="" placeholder="IVV" autocapitalize="characters"></div>
+        <div class="field"><label for="s-years">AÑOS</label><input id="s-years" value="20" inputmode="numeric"></div>
+        <button class="btn" id="s-go">Analizar</button>
+      </div>
+      <div class="hint">Separar con coma. Localiza el mínimo y el máximo del ciclo anual.</div>
+    </div>
+    <div id="s-out"></div>
+  </section>
+
+  <section id="pane-serie" hidden>
+    <div class="panel">
+      <div class="grid g4">
+        <div class="field"><label for="e-tick">TICKER</label><input id="e-tick" value="" placeholder="IVV" autocapitalize="characters"></div>
+        <div class="field"><label for="e-from">DESDE</label><input id="e-from" value="2026-01-01" inputmode="numeric"></div>
+        <div class="field"><label for="e-to">HASTA</label><input id="e-to" value="" placeholder="AAAA-MM-DD" inputmode="numeric"></div>
+        <div class="field"><label for="e-years">AÑOS</label><input id="e-years" value="20" inputmode="numeric"></div>
+        <button class="btn" id="e-go">Evaluar</button>
+      </div>
+      <div class="hint">Retorno año por año de la ventana y posición de sus extremos en el ciclo.</div>
+    </div>
+    <div id="e-out"></div>
+  </section>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script type="module">
+// ═══ CONFIG ═══
+const WORKER_URL="https://seasonality.omar-ora.workers.dev";
+const SMOOTH_DAYS=9, PERM_SIMS=2000, NET_THRESHOLD=0.25, MIN_YEARS=8, MA_HALF=126;
+const $=s=>document.querySelector(s);
+const status=m=>$("#status").innerHTML=m;
+
+function prng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;
+  t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
+
+// ═══ FECHAS ═══
+const MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const doyOf=d=>Math.min(365,Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(d.getFullYear(),0,1))/864e5)+1);
+const doyOfISO=s=>{const y=+s.slice(0,4);
+  return Math.min(365,Math.floor((Date.UTC(y,+s.slice(5,7)-1,+s.slice(8,10))-Date.UTC(y,0,1))/864e5)+1)};
+const lbl=doy=>{const d=new Date(2025,0,1);d.setDate(doy);return `${d.getDate()} ${MES[d.getMonth()]}`};
+const pct=(x,s=2)=>!isFinite(x)?"—":(x>=0?"+":"")+x.toFixed(s)+"%";
+const num=(x,s=2)=>!isFinite(x)?"—":x.toFixed(s);
+
+// ═══ DATOS ═══
+const cache=new Map(), RES=new Map();
+
+// ═══ FIREBASE — caché incremental ═══
+// Config vacía = sin caché. Las claves de Firebase son públicas por diseño:
+// la seguridad va en las reglas, no en ocultarlas. Por eso el navegador puede
+// hablarle directo, a diferencia de Tiingo.
+const FB_URL="";   // ej: https://tu-proyecto-default-rtdb.firebaseio.com
+
+async function fbGet(k){
+  if(!FB_URL) return null;
+  try{ const r=await fetch(`${FB_URL}/series/${k}.json`); return r.ok?await r.json():null }
+  catch(e){ return null }
+}
+async function fbSet(k,v){
+  if(!FB_URL) return;
+  try{ await fetch(`${FB_URL}/series/${k}.json`,{method:"PUT",body:JSON.stringify(v)}) }catch(e){}
+}
+
+function demoSeries(ticker,years){
+  let h=0; for(const c of ticker) h=(h*31+c.charCodeAt(0))>>>0;
+  const rnd=prng(h);
+  const g=()=>{let u=0,v=0;while(!u)u=rnd();while(!v)v=rnd();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+  const seasonal=(h%3===0);
+  const today=new Date(), rows=[], cur=new Date(today.getFullYear()-years,0,1);
+  const mu=0.09/252, sig=0.18/Math.sqrt(252); let p=100;
+  while(cur<=today){
+    const d=cur.getDay();
+    if(d!==0&&d!==6){
+      rows.push({date:iso(cur),close:p});
+      const bump=seasonal?(8/200)*(2*Math.PI/365)*Math.sin(2*Math.PI*(doyOf(cur)-316)/365):0;
+      p*=Math.exp(mu-0.5*sig*sig+sig*g()+bump);
+    }
+    cur.setDate(cur.getDate()+1);
+  }
+  return rows;
+}
+function parseRows(json){
+  if(!Array.isArray(json)||!json.length) throw new Error("Respuesta vacía");
+  const allAdj=json.every(r=>typeof r.adjClose==="number"&&isFinite(r.adjClose));
+  const f=allAdj?"adjClose":"close";
+  const out=json.map(r=>({date:String(r.date).slice(0,10),close:r[f]}))
+    .filter(r=>/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&isFinite(r.close)&&r.close>0)
+    .sort((a,b)=>a.date<b.date?-1:1);
+  out.adjWarning=!allAdj;
+  return out;
+}
+async function fetchRange(t,from,to){
+  const r=await fetch(`${WORKER_URL}/prices?t=${encodeURIComponent(t)}&start=${from}&end=${to}`);
+  if(!r.ok) throw new Error(`No se pudo obtener ${t} (HTTP ${r.status})`);
+  return parseRows(await r.json());
+}
+
+async function getSeries(t,y){
+  const k=`${t}|${y}`;
+  if(cache.has(k)) return cache.get(k);
+  if(!WORKER_URL){ const rows=demoSeries(t,y+2); cache.set(k,rows); return rows }
+
+  const hoy=iso(new Date());
+  const desde=(()=>{const f=new Date();f.setFullYear(f.getFullYear()-y-2);return iso(f)})();
+  let rows=null, fuente="completa";
+  const hit=await fbGet(t);
+
+  if(hit&&hit.rows&&hit.rows.length&&hit.desde<=desde){
+    // TRAMPA: adjClose se recalcula hacia atrás cada vez que el fondo paga un
+    // dividendo. Agregar sólo los días nuevos deja la historia vieja desfasada
+    // y no da ningún error. Verificamos el solapamiento antes de confiar.
+    const solape=await fetchRange(t,hit.rows.at(-1).date,hoy);
+    const ancla=hit.rows.at(-1), fresco=solape.find(r=>r.date===ancla.date);
+    const desfase=fresco?Math.abs(fresco.close/ancla.close-1):1;
+    if(fresco&&desfase<1e-6){
+      const nuevos=solape.filter(r=>r.date>ancla.date);
+      rows=hit.rows.concat(nuevos);
+      rows.adjWarning=hit.adjWarning;
+      fuente=`caché + ${nuevos.length} ruedas`;
+    }else{
+      fuente=fresco?`recarga completa (dividendo: la historia se reajustó ${(desfase*100).toFixed(2)}%)`:"recarga completa";
+    }
+  }
+  if(!rows){ rows=await fetchRange(t,desde,hoy) }
+  await fbSet(t,{desde,hasta:hoy,adjWarning:!!rows.adjWarning,rows:rows.map(r=>({date:r.date,close:r.close}))});
+  rows.fuente=fuente;
+  cache.set(k,rows);
+  return rows;
+}
+
+// ═══ MOTOR ═══
+// Tendencia = media móvil centrada de ±126 ruedas. Sin borde de año calendario:
+// una recta ajustada dentro de enero–diciembre hace del 1 de enero un punto
+// especial y desplaza el mínimo hasta 310 días según el mes. La media móvil lo
+// ubica con 1 día de error en todo el calendario.
+// El componente lineal de la estacionalidad no es identificable frente a la
+// deriva ("sube de marzo a septiembre" y "sube en promedio" son la misma
+// observación). Esa parte se contabiliza aparte, en decide().
+function seasonalProfile(rows,years){
+  const n=rows.length, W=MA_HALF;
+  if(n<2*W+260) throw new Error(`Serie insuficiente: ${n} ruedas, se requieren ~${2*W+260}.`);
+  const lp=new Float64Array(n);
+  for(let i=0;i<n;i++) lp[i]=Math.log(rows[i].close);
+  const cs=new Float64Array(n+1);
+  for(let i=0;i<n;i++) cs[i+1]=cs[i]+lp[i];
+
+  const byYear=new Map();
+  for(let i=W;i<n-W;i++){
+    const ma=(cs[i+W+1]-cs[i-W])/(2*W+1);
+    const y=+rows[i].date.slice(0,4);
+    if(!byYear.has(y)) byYear.set(y,new Map());
+    byYear.get(y).set(doyOfISO(rows[i].date),(Math.exp(lp[i]-ma)-1)*100);
+  }
+  const lastFull=new Date().getFullYear()-1;
+  const sel=[...byYear.keys()].filter(y=>y<=lastFull&&byYear.get(y).size>=200).sort((a,b)=>a-b).slice(-years);
+  if(sel.length<MIN_YEARS) throw new Error(`Sólo ${sel.length} años con tendencia estimable. Se requieren ${MIN_YEARS}.`);
+
+  const grids=sel.map(y=>{
+    const m=byYear.get(y), g=new Float64Array(366).fill(NaN);
+    for(const [d,v] of m) g[d]=v;
+    let last=NaN; for(let d=1;d<=365;d++){ if(isFinite(g[d]))last=g[d]; else g[d]=last }
+    let first=NaN; for(let d=365;d>=1;d--){ if(isFinite(g[d]))first=g[d]; else g[d]=first }
+    return {year:y,grid:g};
+  });
+  const raw=new Float64Array(366);
+  for(let d=1;d<=365;d++){
+    const v=grids.map(g=>g.grid[d]).filter(isFinite);
+    raw[d]=v.length?v.reduce((a,b)=>a+b,0)/v.length:NaN;
+  }
+  for(let d=1;d<=365;d++) if(!isFinite(raw[d])) raw[d]=raw[d>1?d-1:365];
+
+  const t0=new Date(rows[0].date+"T12:00:00"), t1=new Date(rows.at(-1).date+"T12:00:00");
+  const drift=(Math.pow(rows.at(-1).close/rows[0].close,1/((t1-t0)/(365.25*864e5)))-1)*100;
+  return {grids,profile:smooth(raw),years:sel,drift};
+}
+function smooth(a){
+  const o=new Float64Array(366), h=(SMOOTH_DAYS-1)/2;
+  for(let d=1;d<=365;d++){let s=0,n=0;
+    for(let k=-h;k<=h;k++){let j=d+k;if(j<1)j+=365;if(j>365)j-=365;if(isFinite(a[j])){s+=a[j];n++}}
+    o[d]=n?s/n:0}
+  return o;
+}
+function splitHalf(grids){
+  const h=Math.ceil(grids.length/2);
+  const mk=g=>{const p=new Float64Array(366);
+    for(let d=1;d<=365;d++){const v=g.map(x=>x.grid[d]).filter(isFinite);p[d]=v.reduce((a,b)=>a+b,0)/v.length}
+    return smooth(p)};
+  const A=mk(grids.slice(0,h)), B=mk(grids.slice(h));
+  let ma=0,mb=0; for(let d=1;d<=365;d++){ma+=A[d];mb+=B[d]} ma/=365;mb/=365;
+  let sab=0,saa=0,sbb=0;
+  for(let d=1;d<=365;d++){const x=A[d]-ma,y=B[d]-mb;sab+=x*y;saa+=x*x;sbb+=y*y}
+  return {r:sab/Math.sqrt(saa*sbb),nOld:h,nNew:grids.length-h};
+}
+function permuteAmplitude(grids,obs){
+  const rnd=prng(20260715), sims=[];
+  for(let s=0;s<PERM_SIMS;s++){
+    for(const g of grids) g._off=Math.floor(rnd()*365);
+    const p=new Float64Array(366);
+    for(let d=1;d<=365;d++){
+      let sum=0,n=0;
+      for(const g of grids){let j=d+g._off;if(j>365)j-=365;if(isFinite(g.grid[j])){sum+=g.grid[j];n++}}
+      p[d]=n?sum/n:0;
+    }
+    const sm=smooth(p);
+    let mn=Infinity,mx=-Infinity;
+    for(let d=1;d<=365;d++){if(sm[d]<mn)mn=sm[d];if(sm[d]>mx)mx=sm[d]}
+    sims.push(mx-mn);
+  }
+  for(const g of grids) delete g._off;
+  sims.sort((a,b)=>a-b);
+  const p=(sims.filter(x=>x>=obs).length+1)/(sims.length+1);
+  // error de Monte Carlo: con N chico el veredicto depende de la semilla, no de los datos
+  const ci=1.96*Math.sqrt(p*(1-p)/sims.length);
+  return {p,ci,n:sims.length,median:sims[Math.floor(sims.length/2)],p95:sims[Math.floor(sims.length*.95)]};
+}
+
+// ═══ DECISIÓN — determinista ═══
+// El ciclo y el horizonte son dos cosas distintas y antes las mezclé:
+//   ciclo     = mínimo/máximo del año entero → es lo que se MUESTRA
+//   horizonte = mejor día dentro de los próximos 90 → es lo que se DECIDE
+// Rotular el borde del horizonte como "máximo del ciclo" era falso: la curva
+// seguía subiendo después, y la amplitud no cerraba con máx − mín.
+function decide(P,split,perm,G){
+  const today=doyOf(new Date());
+  const stable=split.r>=0.30;
+  // tres estados: la señal es clara, es nula, o el intervalo cruza el umbral
+  const signal=(perm.p+perm.ci)<=0.10;
+  const borderline=!signal && (perm.p-perm.ci)<=0.10;
+  const here=P.profile[today];
+  // Sin horizonte. Se maximiza el neto sobre el año entero:
+  //     neto(k) = descuento(k) − tendencia·k/365
+  // La tendencia penaliza sola las fechas lejanas, así que no hace falta cortar
+  // en 90 días. El corte producía "entrada óptima" en el día 90 exacto, que no
+  // era un piso sino el borde de la búsqueda.
+  let best=0,bestK=0,bestD=today;
+  for(let k=1;k<=364;k++){
+    let d=today+k; if(d>365)d-=365;
+    const n=(here-P.profile[d])-P.drift*k/365;
+    if(n>best){best=n;bestK=k;bestD=d}
+  }
+  const mnD=bestD, mn=P.profile[bestD];
+  const waitDays=bestK;
+  const discount=here-mn, driftCost=P.drift*waitDays/365, net=best;
+  let action,line,why;
+  if(!stable){
+    action="none"; line="Sin señal estacional";
+    why=`El perfil de ${P.years[0]}–${P.years[split.nOld-1]} no se replica en ${P.years[split.nOld]}–${P.years.at(-1)}: correlación intermuestral ${num(split.r)}, por debajo del umbral 0.30. La fecha de entrada es indistinta.`;
+  }else if(borderline){
+    action="none"; line="Señal en el límite";
+    why=`La amplitud del ciclo queda justo en el borde de lo que produce el azar: p=${num(perm.p,3)} ± ${num(perm.ci,3)} contra un umbral de 0.10. El intervalo cruza el umbral, así que el dato no alcanza para decidir en ninguna dirección. No es falta de simulaciones: es que la señal, si existe, es del tamaño del ruido.`;
+  }else if(!signal){
+    action="none"; line="Sin señal estacional";
+    why=`El perfil se replica entre submuestras, pero su amplitud no supera al azar: p=${num(perm.p,3)} ± ${num(perm.ci,3)} contra ${PERM_SIMS} rotaciones del calendario. La fecha de entrada es indistinta.`;
+  }else if(net>NET_THRESHOLD){
+    action="wait"; line=`Entrada óptima: ${lbl(mnD)}`;
+    why=`En ${waitDays} días. El descuento estacional (${pct(discount)}) supera a la tendencia acumulada del período (${pct(driftCost)}).`
+      +(mnD!==G.gmnD?` No es el mínimo del ciclo (${lbl(G.gmnD)}): ese queda ${((G.gmnD-today+365)%365)} días adelante y la tendencia que se pierde esperando ya no compensa.`:"");
+  }else{
+    action="now"; line="Entrada inmediata";
+    why=discount<=0
+      ? `El desvío de hoy (${pct(here)}) ya está en la zona baja del ciclo. Diferir no mejora el precio de entrada.`
+      : `El descuento estacional a ${waitDays} días es ${pct(discount)}, pero la tendencia acumulada del período es ${pct(driftCost)}. Diferir cuesta ${pct(-net)}.`;
+  }
+  return {action,line,why,today,here,mnD,mn,discount,driftCost,net,waitDays,
+    gmnD:G.gmnD,gmxD:G.gmxD,gmn:G.gmn,gmx:G.gmx};
+}
+
+
+// ═══ PDF LETTER — vectorial ═══
+// No es una captura: texto real y gráfico dibujado con líneas. En Letter
+// (215.9×279.4mm) una captura de 390px se estira 2.1x y sale borrosa.
+const PDF_W=215.9, PDF_H=279.4, PDF_M=16;
+const CW=PDF_W-2*PDF_M;
+const RGB={ink:[10,31,60],ink2:[61,85,120],ink3:[91,112,153],navy:[30,58,138],red:[155,44,44],
+  verde:[21,128,61],rojo:[185,28,28],   // retornos: convención universal, más intensos
+  rule:[207,217,230],soft:[250,251,253]};
+
+function stripTags(s){return s.replace(/<[^>]+>/g,"")}
+function pullReco(s){const m=s.match(/<r>(.*?)<\/r>/); return m?[m[1],s.replace(/<r>.*?<\/r>/,"").trim()]:[null,s]}
+
+function pdfChart(doc,P,D,x,y,w,h,edges,shade){
+  let mn=Infinity,mx=-Infinity;
+  for(let d=1;d<=365;d++){if(P.profile[d]<mn)mn=P.profile[d];if(P.profile[d]>mx)mx=P.profile[d]}
+  const pd=(mx-mn)*.2||.5; mn-=pd; mx+=pd;
+  const X=d=>x+(d-1)/364*w, Y=v=>y+(mx-v)/(mx-mn)*h, y0=Y(0);
+
+  if(shade){
+    doc.setFillColor(...RGB.ink); doc.setGState(new doc.GState({opacity:.06}));
+    doc.rect(X(shade[0]),y,Math.max(.5,X(shade[1])-X(shade[0])),h,"F");
+    doc.setGState(new doc.GState({opacity:1}));
+  }
+  // relleno: barritas verticales de 2 días, color según signo
+  // un solo GState para las 182 barras, no uno por barra
+  const gs15=new doc.GState({opacity:.15}), gs1=new doc.GState({opacity:1});
+  doc.setGState(gs15);
+  for(let d=1;d<=364;d+=2){
+    const v=P.profile[d], yy=Y(v);
+    doc.setFillColor(...(v>=0?RGB.navy:RGB.red));
+    doc.rect(X(d),Math.min(yy,y0),Math.max(.35,X(d+2)-X(d)),Math.abs(y0-yy),"F");
+  }
+  doc.setGState(gs1);
+
+  // grilla de meses
+  doc.setDrawColor(...RGB.rule); doc.setLineWidth(.15);
+  const MESES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  for(let m=0;m<12;m++){
+    const doy=Math.floor((Date.UTC(2025,m,1)-Date.UTC(2025,0,1))/864e5)+1;
+    doc.line(X(doy),y,X(doy),y+h);
+    doc.setFontSize(6); doc.setTextColor(...RGB.ink3); doc.setFont("helvetica","normal");
+    doc.text(MESES[m],X(doy)+.8,y+h+3.2);
+  }
+  // eje cero
+  doc.setDrawColor(...RGB.ink); doc.setLineWidth(.3); doc.line(x,y0,x+w,y0);
+  doc.setFontSize(6); doc.setTextColor(...RGB.ink3);
+  for(const v of [mn+pd*.55,0,mx-pd*.55]) doc.text(v.toFixed(1),x-1.5,Y(v)+.8,{align:"right"});
+
+  // curva
+  doc.setDrawColor(...RGB.ink); doc.setLineWidth(.45);
+  for(let d=1;d<365;d++) doc.line(X(d),Y(P.profile[d]),X(d+1),Y(P.profile[d+1]));
+
+  if(D){
+    const mark=(dd,col,txt,top)=>{
+      doc.setDrawColor(...col); doc.setLineWidth(.25); doc.setLineDashPattern([1,1],0);
+      doc.line(X(dd),y,X(dd),y+h); doc.setLineDashPattern([],0);
+      doc.setFillColor(...col); doc.circle(X(dd),Y(P.profile[dd]),.9,"F");
+      doc.setFontSize(6); doc.setTextColor(...col); doc.setFont("helvetica","bold");
+      doc.text(txt,X(dd)+(dd>240?-1.5:1.5),top?y+3:y+h-1.5,{align:dd>240?"right":"left"});
+    };
+    // decide() ya no devuelve mxD: el ciclo se lee de gmxD/gmnD. Sin este
+    // fallback, D.mxD era undefined y jsPDF.line tiraba "Invalid arguments".
+    const _mx=D.gmxD??D.mxD, _mn=D.gmnD??D.mnD;
+    // navy el máximo, rojo el mínimo: igual que la pantalla (estaban invertidos)
+    mark(_mx,RGB.navy,"max "+lblES(_mx),true);
+    mark(_mn,RGB.red,"min "+lblES(_mn),false);
+    doc.setDrawColor(...RGB.ink); doc.setLineWidth(.4); doc.line(X(D.today),y,X(D.today),y+h);
+    doc.setFontSize(6.5); doc.setTextColor(...RGB.ink); doc.text("hoy",X(D.today)+1,y+h/2);
+  }
+  if(edges) for(const e of edges){
+    doc.setFillColor(255,255,255); doc.setDrawColor(...RGB.ink); doc.setLineWidth(.4);
+    doc.circle(X(e.d),Y(P.profile[e.d]),1.1,"FD");
+    doc.setFontSize(6); doc.setTextColor(...RGB.ink); doc.setFont("helvetica","bold");
+    doc.text(e.t,X(e.d)+(e.d>240?-1.8:1.8),Y(P.profile[e.d])-1.8,{align:e.d>240?"right":"left"});
+  }
+  return y+h+6;
+}
+
+function lblES(doy){const d=new Date(2025,0,1);d.setDate(doy);
+  return `${d.getDate()} ${["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"][d.getMonth()]}`}
+
+function pdfBoxes(doc,y,items){
+  const w=CW/items.length, hasE=items.some(x=>x.e);
+  const EW=w-7;                       // ancho de texto dentro de la caja
+  let maxL=0;
+  if(hasE){ doc.setFontSize(items.length>3?7.5:8); doc.setFont("helvetica","normal");
+    for(const it of items) if(it.e) maxL=Math.max(maxL,doc.splitTextToSize(it.e,EW).length) }
+  const LH=items.length>3?3.1:3.4;
+  const h=hasE?(19.5+maxL*LH+2.5):14;
+  doc.setDrawColor(...RGB.rule); doc.setLineWidth(.2);
+  doc.setFillColor(...RGB.soft); doc.rect(PDF_M,y,CW,h,"FD");
+  items.forEach((it,i)=>{
+    const x=PDF_M+i*w;
+    if(i){ doc.setDrawColor(...RGB.rule); doc.line(x,y,x,y+h) }
+    doc.setFontSize(items.length>3?6.5:7); doc.setTextColor(...RGB.ink2); doc.setFont("helvetica","bold");
+    doc.text(it.k,x+3.5,y+5.5);
+    doc.setFontSize(items.length>3?15:17); doc.setTextColor(...(it.c||RGB.ink)); doc.setFont("courier","bold");
+    doc.text(it.v,x+3.5,y+14);
+    if(it.e){
+      doc.setFontSize(items.length>3?7.5:8); doc.setTextColor(...RGB.ink3); doc.setFont("helvetica","normal");
+      doc.text(doc.splitTextToSize(it.e,EW),x+3.5,y+19.5,{lineHeightFactor:1.25});
+    }
+  });
+  return y+h+5;
+}
+
+// salto de página: SERIE con 20 años necesita 279mm en una hoja de 247
+function ensure(doc,y,need){
+  if(y+need>PDF_H-18){ doc.addPage(); return PDF_M+8 }
+  return y;
+}
+
+function buildPDF(kind,tk,P,D,split,perm,amp,resumen,extra){
+  const doc=new jspdf.jsPDF({unit:"mm",format:"letter"});
+  let y=PDF_M+4;
+
+  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(...RGB.ink);
+  doc.text(`ESTACIONALIDAD ${kind==="serie"?"SERIE":"SCAN"} · ${tk}`,PDF_W/2,y,{align:"center"});
+  y+=5;
+  doc.setFont("courier","normal"); doc.setFontSize(7.5); doc.setTextColor(...RGB.ink2);
+  doc.text(extra.meta,PDF_W/2,y,{align:"center"});
+  y+=3.5;
+  doc.setDrawColor(...RGB.ink); doc.setLineWidth(.5); doc.line(PDF_M,y,PDF_W-PDF_M,y);
+  y+=7;
+
+  doc.setFont("helvetica","bold"); doc.setFontSize(6.5); doc.setTextColor(...RGB.ink2);
+  doc.text(kind==="scan"?"ENTRADA":"VENTANA",PDF_M,y); y+=6;
+  doc.setFontSize(14); doc.setTextColor(...(D&&D.action==="wait"?RGB.navy:RGB.ink));
+  doc.text(extra.line,PDF_M,y); y+=5;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(...RGB.ink2);
+  const wl=doc.splitTextToSize(stripTags(extra.why),CW);
+  doc.text(wl,PDF_M,y,{lineHeightFactor:1.3}); y+=wl.length*4.1+4;
+
+  if(extra.boxes){ y=ensure(doc,y,30); y=pdfBoxes(doc,y,extra.boxes) }
+
+  y=ensure(doc,y,30);
+  doc.setFont("helvetica","bold"); doc.setFontSize(6.5); doc.setTextColor(...RGB.ink2);
+  doc.text("RESUMEN",PDF_M,y); y+=5;
+  for(const par of resumen){
+    const [reco,rest]=pullReco(par);
+    if(reco){
+      doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(...RGB.ink);
+      const rl=doc.splitTextToSize(stripTags(reco),CW);
+      doc.text(rl,PDF_M,y); y+=rl.length*5+2.5;
+    }
+    if(rest){
+      doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(...RGB.ink);
+      const pl=doc.splitTextToSize(stripTags(rest),CW);
+      doc.text(pl,PDF_M,y,{lineHeightFactor:1.35}); y+=pl.length*4.4+3;
+    }
+  }
+  y+=2;
+  y=ensure(doc,y,58);
+  y=pdfChart(doc,P,D,PDF_M+7,y,CW-9,44,extra.edges,extra.shade);
+  doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.setTextColor(...RGB.ink3);
+  doc.text("Distancia diaria del precio a su media movil centrada de 252 ruedas, promediada por dia del ano.",PDF_M,y);
+  y+=5;
+  y=ensure(doc,y,40);
+  y=pdfBoxes(doc,y,extra.stats);
+
+  if(extra.table){
+    y=ensure(doc,y,26);
+    doc.setFont("helvetica","bold"); doc.setFontSize(6.5); doc.setTextColor(...RGB.ink2);
+    doc.text("SERIE ANUAL",PDF_M,y); y+=4.5;
+    doc.setDrawColor(...RGB.ink); doc.setLineWidth(.3); doc.line(PDF_M,y,PDF_W-PDF_M,y); y+=3.5;
+    doc.setFontSize(6.5); doc.text("ANO",PDF_M,y); doc.text("VENTANA",PDF_M+26,y,{align:"right"});
+    doc.text("ANO CAL.",PDF_M+50,y,{align:"right"});
+    doc.setFont("helvetica","normal"); doc.setFontSize(5.5); doc.setTextColor(...RGB.ink3);
+    doc.text("ventana en navy · ano calendario en verde/rojo",PDF_M+58,y);
+    doc.setTextColor(...RGB.ink2); y+=2;
+    doc.setDrawColor(...RGB.rule); doc.setLineWidth(.15); doc.line(PDF_M,y,PDF_W-PDF_M,y); y+=3.5;
+    let mxb=0,mxa=0;
+    for(const r of extra.table){ mxb=Math.max(mxb,Math.abs(r.win)); if(isFinite(r.ann)) mxa=Math.max(mxa,Math.abs(r.ann)) }
+    mxb=mxb||1; mxa=mxa||1;
+    const bx=PDF_M+58, bw=CW-62, cx=bx+bw/2;
+    for(const r of extra.table){
+      y=ensure(doc,y,8);
+      doc.setFont("courier","normal"); doc.setFontSize(8); doc.setTextColor(...RGB.ink2);
+      doc.text(String(r.year),PDF_M,y);
+      doc.setFont("courier","bold"); doc.setTextColor(...RGB.navy);
+      doc.text((r.win>=0?"+":"")+r.win.toFixed(2)+"%",PDF_M+26,y,{align:"right"});
+      doc.setFont("courier","normal"); doc.setTextColor(...(isFinite(r.ann)?(r.ann>=0?RGB.verde:RGB.rojo):RGB.ink3));
+      doc.text(isFinite(r.ann)?(r.ann>=0?"+":"")+r.ann.toFixed(1)+"%":"-",PDF_M+50,y,{align:"right"});
+      // eje central
+      doc.setDrawColor(...RGB.rule); doc.setLineWidth(.12); doc.line(cx,y-3.6,cx,y+2.4);
+      // VENTANA: navy siempre. El signo lo dice la dirección.
+      const l1=Math.abs(r.win)/mxb*(bw/2-2.5), e1=r.win>=0?cx+l1:cx-l1;
+      doc.setDrawColor(...RGB.navy); doc.setLineWidth(.55); doc.line(cx,y-2.2,e1,y-2.2);
+      doc.setFillColor(...RGB.navy); doc.circle(e1,y-2.2,.95,"F");
+      // AÑO CAL.: verde o rojo según ganó o perdió.
+      if(isFinite(r.ann)){
+        const l2=Math.abs(r.ann)/mxa*(bw/2-2.5), e2=r.ann>=0?cx+l2:cx-l2;
+        const c2=r.ann>=0?RGB.verde:RGB.rojo;
+        doc.setDrawColor(...c2); doc.setLineWidth(.4); doc.line(cx,y+1,e2,y+1);
+        doc.setFillColor(...c2); doc.circle(e2,y+1,.75,"F");
+      }
+      y+=6.8;
+    }
+  }
+
+  const n=doc.getNumberOfPages(), fy=PDF_H-11;
+  for(let i=1;i<=n;i++){
+    doc.setPage(i);
+    doc.setDrawColor(...RGB.rule); doc.setLineWidth(.2); doc.line(PDF_M,fy,PDF_W-PDF_M,fy);
+    doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(...RGB.ink3);
+    doc.text(extra.footer,PDF_M,fy+4);
+    doc.text(`Pagina ${i} de ${n}`,PDF_W-PDF_M,fy+4,{align:"right"});
+  }
+  return doc;
+}
+
+// ═══ RESUMEN — traducción a lenguaje de inversor ═══
+// Determinista: las definiciones son fijas, sólo cambian los números.
+// No hay modelo generando texto, así que no puede inventar un dato.
+const cuantas=(perm)=>{const k=Math.round(perm.p*(perm.n+1)-1);
+  return k<=0?`ninguna de las ${perm.n} rotaciones al azar dio`:`sólo ${k} de las ${perm.n} rotaciones al azar dieron`};
+const cuantasPos=(perm)=>{const k=Math.round(perm.p*(perm.n+1)-1);
+  return `${k} de las ${perm.n} rotaciones al azar (${(perm.p*100).toFixed(1)}%) dieron`};
+function fecha(doy){const d=new Date(2025,0,1);d.setDate(doy);
+  return `${d.getDate()} de ${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][d.getMonth()]}`}
+
+function resumenScan(tk,P,D,split,perm,amp){
+  const p=[];
+  const base=`<b>${tk}</b> sube <b>${pct(P.drift,1)}</b> por año desde ${P.years[0]}: eso pasa compres cuando compres. Lo que sigue está medido por encima de esa subida, ya descontada.`;
+
+  if(D.line==="Sin señal estacional" && split.r<0.30){
+    p.push(base);
+    p.push(`<r>No hay una fecha mejor que otra. Comprá cuando tengas el capital.</r> Partiendo la muestra al medio, la forma del año de ${P.years[0]}–${P.years[split.nOld-1]} casi no se parece a la de ${P.years[split.nOld]}–${P.years.at(-1)}: la correlación entre las dos mitades es <b>${num(split.r)}</b> y el mínimo aceptable es 0.30. Lo que parece patrón en una mitad, desaparece en la otra.`);
+    p.push(`Esperar un momento que no existe te cuesta la subida que te perdés mientras esperás.`);
+    return p;
+  }
+  if(D.line==="Sin señal estacional"){
+    p.push(base);
+    p.push(`<r>No hay una fecha mejor que otra. Comprá cuando tengas el capital.</r> La forma se repite entre mitades, pero es muy chica: rotando el calendario al azar, ${cuantasPos(perm)} una forma igual o más marcada que la real. Pasando el 10%, no se distingue del ruido.`);
+    return p;
+  }
+  if(D.line==="Señal en el límite"){
+    p.push(base);
+    p.push(`<r>No alcanza para decidir. Tratala como si no hubiera señal.</r> Rotando el calendario al azar, ${cuantasPos(perm)} una forma igual o más marcada que la real. El corte está en 10% y el error del cálculo es ±${(perm.ci*100).toFixed(1)} puntos: el resultado queda a caballo del corte.`);
+    p.push(`No es falta de cálculo: con ${P.years.length} años, la señal —si existe— es del tamaño del ruido.`);
+    return p;
+  }
+
+  p.push(`${base} Encima de ella hay una forma que se repite: el precio tiende a estar más barato cerca del <b>${fecha(D.gmnD)}</b> y más caro cerca del <b>${fecha(D.gmxD)}</b>, con <b>${num(amp)}%</b> entre los dos. No es que suba o baje ese día: se aparta de su propia tendencia y después vuelve.`);
+  if(D.action==="wait"){
+    p.push(`<r>Esperá al ${fecha(D.mnD)}: ${D.waitDays} días, neto ${pct(D.net)} a favor.</r> Hoy el precio está <b>${pct(D.here)}</b> contra su tendencia. Esperando, el descuento histórico es <b>${pct(D.discount)}</b>; el fondo sube <b>${pct(D.driftCost)}</b> en esos días. La resta queda a favor de esperar.${
+      D.mnD!==D.gmnD?` El punto más barato del año es el ${fecha(D.gmnD)}, pero está ${((D.gmnD-D.today+365)%365)} días adelante: lo que el fondo sube hasta allá se come el descuento extra.`:""}`);
+  }else{
+    p.push(`<r>Comprá hoy.</r> ${D.discount<=0
+      ? `El precio ya está <b>${pct(D.here)}</b> contra su tendencia: estás en la zona barata del año.`
+      : `Hay <b>${pct(D.discount)}</b> de descuento si esperás ${D.waitDays} días, pero el fondo sube <b>${pct(D.driftCost)}</b> en ese lapso: esperar cuesta <b>${pct(-D.net)}</b>.`}`);
+  }
+  p.push(`Confianza: la forma se repite entre mitades (correlación <b>${num(split.r)}</b>, mínimo 0.30) y rotando el calendario ${cuantas(perm)} una forma tan marcada. Pero esto no dice que el ${fecha(D.mnD)} vaya a ser barato <i>este</i> año: dice que lo fue en promedio en ${P.years.length} años, y un año cualquiera se aleja mucho del promedio.`);
+  return p;
+}
+
+function resumenSerie(tk,P,a,b,openV,closeV,m,expected,pos,n,sd,split,days){
+  const p=[];
+  p.push(`Del <b>${fecha(a)}</b> al <b>${fecha(b)}</b> —${days} días— <b>${tk}</b> rindió en promedio <b>${pct(m)}</b> por año en los últimos ${n} años.`);
+  p.push(`Pero ese número solo no dice nada. ${tk} viene subiendo <b>${pct(P.drift,1)}</b> por año, y ${days} días de esa subida ya son <b>${pct(expected)}</b>. Lo que sobra —<b>${pct(m-expected)}</b>— es lo único que se le podría atribuir al calendario. El resto lo hubieras ganado igual comprando en cualquier otra fecha.`);
+  // +0.00% no es prima ni descuento: el umbral se toma sobre lo que se muestra
+  const pr=v=>Math.abs(v)<0.005?`prácticamente sobre su tendencia (<b>${pct(v)}</b>): ni prima ni descuento`
+    :v>0?`<b>${pct(v)}</b> por encima de su tendencia, o sea pagando una prima`
+    :`<b>${pct(v)}</b> por debajo de su tendencia, o sea con descuento`;
+  p.push(`¿Y cómo está parado el precio en esas dos fechas? El ${fecha(a)} —cuando abrirías— suele estar ${pr(openV)}. El ${fecha(b)} —cuando cerrarías— suele estar ${pr(closeV)}. ${
+    openV<0&&closeV>0?"La ventana va de barato a caro: es la dirección que querés."
+    :openV>0&&closeV>0?"La ventana va de caro a más caro: entrás pagando de más."
+    :openV<0&&closeV<0?"La ventana empieza y termina barata: buena para entrar, no para salir."
+    :"La ventana va de caro a barato: es la dirección contraria a la que querés."}`);
+  p.push(`De los ${n} años, <b>${pos}</b> terminaron en positivo y <b>${n-pos}</b> en negativo. La diferencia entre unos y otros es grande: el desvío estándar es <b>${num(sd)}%</b>, ${sd>Math.abs(m)*2?`más del doble del promedio de ${pct(m)}. Eso significa que el promedio describe mal lo que pasa un año cualquiera`:`comparable al promedio`}.`);
+  if(split.r<0.30) p.push(`Y el filtro de fondo no pasa: la forma del año en la primera mitad de la muestra no se parece a la de la segunda (correlación <b>${num(split.r)}</b>, mínimo aceptable 0.30). Los dos números de arriba están medidos sobre un patrón que no se sostiene.`);
+  return p;
+}
+
+// ═══ GRÁFICO ═══
+function chart(P,M,shadeFrom,shadeTo,edges){
+  const W=460,H=210,L=34,R=10,T=18,B=24;
+  const iw=W-L-R, ih=H-T-B;
+  let mn=Infinity,mx=-Infinity;
+  for(let d=1;d<=365;d++){if(P.profile[d]<mn)mn=P.profile[d];if(P.profile[d]>mx)mx=P.profile[d]}
+  const pd=(mx-mn)*.20||.5; mn-=pd; mx+=pd;
+  const X=d=>L+(d-1)/364*iw, Y=v=>T+(mx-v)/(mx-mn)*ih;
+  const y0=Y(0);
+
+  let path="";
+  for(let d=1;d<=365;d++) path+=(d===1?"M":"L")+X(d).toFixed(1)+" "+Y(P.profile[d]).toFixed(1);
+  const area=`${path}L${X(365).toFixed(1)} ${y0.toFixed(1)}L${X(1).toFixed(1)} ${y0.toFixed(1)}Z`;
+
+  let ticks="";
+  for(let m=0;m<12;m++){
+    const x=X(doyOf(new Date(2025,m,1)));
+    ticks+=`<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${T+ih}" stroke="#CFD9E6" stroke-width="1"/>`
+      +`<text x="${(x+3).toFixed(1)}" y="${H-8}" font-family="var(--mono)" font-size="9" fill="#5B7099">${MES[m]}</text>`;
+  }
+  let gy="";
+  for(const v of [mn+pd*.55,0,mx-pd*.55])
+    gy+=`<text x="${L-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" font-family="var(--mono)" font-size="9" fill="#5B7099">${v.toFixed(1)}</text>`;
+
+  const shade=(shadeFrom!=null)
+    ? `<rect x="${X(shadeFrom).toFixed(1)}" y="${T}" width="${Math.max(1,X(shadeTo)-X(shadeFrom)).toFixed(1)}" height="${ih}" fill="#0A1F3C" opacity=".05"/>`
+    : "";
+  // etiquetas a alturas OPUESTAS: el máximo arriba, el mínimo abajo. No colisionan.
+  const mark=(d,col,txt,top)=>{const x=X(d), ty=top?(T+10):(T+ih-8);
+    return `<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${(T+ih).toFixed(1)}" stroke="${col}" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>`
+      +`<circle cx="${x.toFixed(1)}" cy="${Y(P.profile[d]).toFixed(1)}" r="3.5" fill="${col}" stroke="#fff" stroke-width="1.2"/>`
+      +`<text x="${(x+(d>240?-5:5)).toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${d>240?"end":"start"}" `
+      +`font-family="var(--mono)" font-size="9" font-weight="600" fill="${col}">${txt}</text>`};
+
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Desvío del precio contra su propia tendencia, por día del año">
+    <defs>
+      <clipPath id="cu"><rect x="${L}" y="${T}" width="${iw}" height="${Math.max(0,y0-T).toFixed(1)}"/></clipPath>
+      <clipPath id="cd"><rect x="${L}" y="${y0.toFixed(1)}" width="${iw}" height="${Math.max(0,T+ih-y0).toFixed(1)}"/></clipPath>
+    </defs>
+    ${ticks}${shade}
+    <path d="${area}" fill="var(--navy-fill)" clip-path="url(#cu)"/>
+    <path d="${area}" fill="var(--red-fill)" clip-path="url(#cd)"/>
+    <line x1="${L}" y1="${y0.toFixed(1)}" x2="${W-R}" y2="${y0.toFixed(1)}" stroke="#0A1F3C" stroke-width="1"/>
+    ${gy}
+    <path d="${path}" fill="none" stroke="#0A1F3C" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/>
+    ${M?mark(M.gmxD??M.mxD,"var(--navy)","máx "+lbl(M.gmxD??M.mxD),true):""}
+    ${M?mark(M.gmnD??M.mnD,"var(--red)","mín "+lbl(M.gmnD??M.mnD),false):""}
+    ${M&&M.action==="wait"&&M.mnD!==M.gmnD?`<line x1="${X(M.mnD).toFixed(1)}" y1="${T}" x2="${X(M.mnD).toFixed(1)}" y2="${(T+ih).toFixed(1)}" stroke="#0A1F3C" stroke-width="1" stroke-dasharray="1 2"/>`
+      +`<circle cx="${X(M.mnD).toFixed(1)}" cy="${Y(P.profile[M.mnD]).toFixed(1)}" r="3" fill="#fff" stroke="#0A1F3C" stroke-width="1.4"/>`
+      +`<text x="${(X(M.mnD)+(M.mnD>240?-5:5)).toFixed(1)}" y="${(Y(P.profile[M.mnD])+11).toFixed(1)}" text-anchor="${M.mnD>240?"end":"start"}" font-family="var(--mono)" font-size="8" font-weight="700" fill="#0A1F3C">entrada</text>`:""}
+    ${edges?edges.map(e=>`<circle cx="${X(e.d).toFixed(1)}" cy="${Y(P.profile[e.d]).toFixed(1)}" r="3" fill="#fff" stroke="#0A1F3C" stroke-width="1.4"/>`
+      +`<text x="${(X(e.d)+(e.d>240?-5:5)).toFixed(1)}" y="${(Y(P.profile[e.d])-5).toFixed(1)}" text-anchor="${e.d>240?"end":"start"}" font-family="var(--mono)" font-size="8" font-weight="700" fill="#0A1F3C">${e.t}</text>`).join(""):""}
+    ${M?`<line x1="${X(M.today).toFixed(1)}" y1="${T}" x2="${X(M.today).toFixed(1)}" y2="${(T+ih).toFixed(1)}" stroke="#0A1F3C" stroke-width="1.4"/>`
+      +`<text x="${(X(M.today)+4).toFixed(1)}" y="${(T+ih/2).toFixed(1)}" font-family="var(--mono)" font-size="9" font-weight="700" fill="#0A1F3C">hoy</text>`:""}
+  </svg>`;
+}
+
+const LEGEND=`<div class="legend">
+  <div class="k"><span><i style="background:var(--navy)"></i>Sobre tendencia — prima</span><span><i style="background:var(--red)"></i>Bajo tendencia — descuento</span></div>
+  Distancia diaria del precio a su media móvil centrada de 252 ruedas, promediada por día del año. La tendencia de largo plazo queda excluida.
+</div>`;
+
+// ═══ TABLA CON BARRAS ═══
+// lollipop: la línea lleva al punto, el punto es el dato.
+// VENTANA: siempre navy — es el objeto de estudio, una sola identidad.
+//          El signo ya lo dice la dirección, no hace falta el color.
+// AÑO CAL.: muta verde/rojo — es el contexto, ahí sí importa si ganó o perdió.
+function bars(rows,key,muta){
+  let m=0; for(const r of rows) m=Math.max(m,Math.abs(r[key])||0);
+  m=m||1;
+  return rows.map(r=>{
+    const v=r[key];
+    if(!isFinite(v)) return "";
+    const w=Math.abs(v)/m*47;
+    const c=muta?(v>=0?"var(--verde)":"var(--rojo)"):"var(--navy)";
+    return `<b class="${v>=0?"p":"n"} ${muta?"sec":""}" style="${v>=0?"left":"right"}:50%;width:${w.toFixed(1)}%;background:${c}"></b>`;
+  });
+}
+
+// ═══ RENDER ═══
+function ledger(D){
+  if(D.action==="none") return "";
+  return `<div class="ledger">
+    <div class="led"><div class="led-k">DESCUENTO ESTACIONAL</div><div class="led-v ${D.discount>0?'pos':'neg'}">${pct(D.discount)}</div></div>
+    <div class="led"><div class="led-k">TENDENCIA DEL PERÍODO</div><div class="led-v neg">${pct(-D.driftCost)}</div></div>
+    <div class="led"><div class="led-k">NETO</div><div class="led-v ${D.net>0?'pos':'neg'}">${pct(D.net)}</div></div>
+  </div>`;
+}
+
+function scanCard(tk,P,D,split,perm,amp){
+  return `<div class="card">
+    <div class="card-title"><div class="t">ESTACIONALIDAD SCAN · ${tk}</div>
+      <div class="m">${P.years[0]}–${P.years.at(-1)} · ${P.years.length} años · tendencia ${pct(P.drift,1)}/año</div></div>
+    <div class="verdict">
+      <div class="vk">ENTRADA</div>
+      <div class="vl ${D.action}">${D.line}</div>
+      <div class="vw">${D.why}</div>
+      ${ledger(D)}
+    </div>
+    <div class="resumen"><h4>RESUMEN</h4>${resumenScan(tk,P,D,split,perm,amp).map(x=>`<p>${x}</p>`).join("")}</div>
+    <div class="chart">${chart(P,D,D.action==="wait"?D.today:null,D.mnD)}</div>
+    ${LEGEND}
+    <div class="stats">
+      <div class="stat"><div class="stat-k">MÍNIMO DEL CICLO</div><div class="stat-v" style="color:var(--red)">${lbl(D.gmnD)}</div><div class="stat-n">desvío ${pct(D.gmn)}</div></div>
+      <div class="stat"><div class="stat-k">MÁXIMO DEL CICLO</div><div class="stat-v" style="color:var(--navy)">${lbl(D.gmxD)}</div><div class="stat-n">desvío ${pct(D.gmx)}</div></div>
+      <div class="stat"><div class="stat-k">AMPLITUD</div><div class="stat-v">${num(amp)}%</div><div class="stat-n">máx − mín</div></div>
+      <div class="stat"><div class="stat-k">CORRELACIÓN r</div><div class="stat-v" style="color:${split.r>=.3?'var(--pos)':'var(--neg)'}">${num(split.r)}</div><div class="stat-n">submuestra 1 vs 2</div></div>
+      <div class="stat"><div class="stat-k">p-VALOR</div><div class="stat-v" style="color:${(perm.p+perm.ci)<=.1?'var(--pos)':((perm.p-perm.ci)<=.1?'var(--ink-2)':'var(--neg)')}">${num(perm.p,3)}</div><div class="stat-n">± ${num(perm.ci,3)} · ${perm.n} permut.</div></div>
+    </div>
+    <details><summary>METODOLOGÍA</summary><div class="method">
+      <p>La tendencia de cada rueda es la media móvil centrada de ±126 ruedas. El desvío contra esa media es el precio relativo a su propia tendencia. El perfil es el promedio del desvío por día del año sobre ${P.years.length} años, suavizado a ${SMOOTH_DAYS} días.</p>
+      <p><b>Correlación r = ${num(split.r)}.</b> Perfil de los primeros ${split.nOld} años contra el de los últimos ${split.nNew}. Un patrón estructural se replica entre submuestras. Umbral: 0.30.</p>
+      <p><b>p-valor = ${num(perm.p,3)} ± ${num(perm.ci,3)}.</b> ${perm.n} rotaciones aleatorias del calendario de cada año. Amplitud observada ${num(amp)}%; mediana bajo permutación ${num(perm.median)}%; p95 ${num(perm.p95)}%. El ± es error de simulación: con 200 rotaciones era ±0.042 y el veredicto cambiaba según la semilla.</p>
+      <p><b>Límite.</b> El componente lineal intranual no es identificable frente a la tendencia y se contabiliza como tal. El piso de detección con ${P.years.length} años y volatilidad 18% es ≈5% de amplitud.</p>
+    </div></details>
+    <div class="actions"><button class="btn ghost" data-pdf="scan:${tk}">PDF</button><button class="btn" data-tg="scan:${tk}">Telegram</button></div>
+  </div>`;
+}
+
+// ═══ FLOWS ═══
+async function runScan(){
+  const tks=$("#s-tick").value.split(",").map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const yrs=Math.max(MIN_YEARS,Math.min(40,parseInt($("#s-years").value)||20));
+  if(!tks.length) return status(`<span class="err">Ingresar al menos un ticker.</span>`);
+  $("#s-go").disabled=true; $("#s-out").innerHTML=""; status("Calculando…");
+  for(const tk of tks){
+    try{
+      const P=seasonalProfile(await getSeries(tk,yrs),yrs);
+      const split=splitHalf(P.grids);
+      let gmx=-Infinity,gmxD=1,gmn=Infinity,gmnD=1;
+      for(let d=1;d<=365;d++){ if(P.profile[d]>gmx){gmx=P.profile[d];gmxD=d} if(P.profile[d]<gmn){gmn=P.profile[d];gmnD=d} }
+      const amp=gmx, mnv=gmn;
+      const perm=permuteAmplitude(P.grids,gmx-gmn);
+      const D=decide(P,split,perm,{gmnD,gmxD,gmn,gmx});
+      $("#s-out").insertAdjacentHTML("beforeend",scanCard(tk,P,D,split,perm,amp-mnv));
+      RES.set(`scan:${tk}`,{kind:"scan",tk,P,D,split,perm,amp:amp-mnv,line:D.line});
+    }catch(e){
+      $("#s-out").insertAdjacentHTML("beforeend",
+        `<div class="card"><div class="card-title"><div class="t">${tk}</div></div><div class="empty err">${e.message}</div></div>`);
+    }
+  }
+  $("#s-go").disabled=false;
+  status(WORKER_URL?"":"Modo demo · serie simulada, no de mercado.");
+}
+
+async function runSerie(){
+  const tk=$("#e-tick").value.trim().toUpperCase();
+  const f=$("#e-from").value.trim(), t=$("#e-to").value.trim();
+  const re=/^\d{4}-\d{2}-\d{2}$/;
+  if(!tk) return status(`<span class="err">Falta el ticker.</span>`);
+  if(!re.test(f)) return status(`<span class="err">DESDE: formato AAAA-MM-DD.</span>`);
+  if(!re.test(t)) return status(`<span class="err">HASTA: formato AAAA-MM-DD.</span>`);
+  const df=new Date(f+"T12:00:00"), dt=new Date(t+"T12:00:00");
+  if(isNaN(df)||isNaN(dt)) return status(`<span class="err">Fecha inexistente.</span>`);
+  if(df>dt) return status(`<span class="err">DESDE posterior a HASTA.</span>`);
+  if(dt>new Date()) return status(`<span class="err">HASTA es futura. Usar el mismo período del año anterior.</span>`);
+
+  // SERIE usaba 20 años fijos mientras SCAN usaba los del campo: el mismo
+  // ticker daba dos mínimos del ciclo distintos y dos descargas de Tiingo.
+  const yrs=Math.max(MIN_YEARS,Math.min(40,parseInt($("#e-years").value)||20));
+  $("#e-go").disabled=true; $("#e-out").innerHTML=""; status("Calculando…");
+  try{
+    const rows=await getSeries(tk,yrs), P=seasonalProfile(rows,yrs);
+    const split=splitHalf(P.grids);
+    const a=doyOf(df), b=doyOf(dt);
+    const dates=rows.map(r=>r.close&&r.date);
+
+    // retorno de la ventana + retorno del año calendario
+    const yearClose=new Map();
+    for(const r of rows) yearClose.set(+r.date.slice(0,4),r.close);
+    const hist=[];
+    for(const y of P.years.slice().reverse()){
+      const s=idxAfter(dates,shiftY(f,y-df.getFullYear())), e=idxBefore(dates,shiftY(t,y-dt.getFullYear()));
+      if(s<0||e<0||e<=s) continue;
+      const prev=yearClose.get(y-1);
+      hist.push({year:y,win:(rows[e].close/rows[s].close-1)*100,
+        ann:prev?(yearClose.get(y)/prev-1)*100:NaN});
+    }
+    const rs=hist.map(h=>h.win);
+    const m=rs.reduce((p,c)=>p+c,0)/rs.length;
+    const sd=Math.sqrt(rs.reduce((p,c)=>p+(c-m)**2,0)/(rs.length-1));
+    const pos=rs.filter(x=>x>0).length;
+    const openV=P.profile[a], closeV=P.profile[b];
+    const stable=split.r>=0.30;
+    // mín/máx globales del ciclo: dan el marco de referencia del veredicto
+    let gmn=Infinity,gmnD=1,gmx=-Infinity,gmxD=1;
+    for(let d=1;d<=365;d++){ if(P.profile[d]<gmn){gmn=P.profile[d];gmnD=d} if(P.profile[d]>gmx){gmx=P.profile[d];gmxD=d} }
+    const M={mnD:gmnD,mxD:gmxD,today:doyOf(new Date())};
+    const days=Math.round((dt-df)/864e5)+1, expected=P.drift*days/365;
+
+    let vl,vw,vc;
+    if(!stable){ vc="none"; vl="Ventana no distinguible";
+      vw=`El perfil no se replica entre submuestras (r=${num(split.r)}). Los extremos de esta ventana no son informativos.`;
+    }else if(openV<-0.15&&closeV>0.15){ vc="wait"; vl="Apertura en mínimo, cierre en máximo";
+      vw=`Desvío al abrir ${pct(openV)}, en cierre ${pct(closeV)}. La ventana atraviesa el ciclo de mínimo a máximo.`;
+    }else if(openV<-0.15){ vc="wait"; vl="Apertura en zona baja del ciclo";
+      vw=`Desvío al abrir ${pct(openV)}. El cierre queda en ${pct(closeV)}: no es un extremo superior.`;
+    }else if(closeV>0.15){ vc="wait"; vl="Cierre en zona alta del ciclo";
+      vw=`Desvío al cerrar ${pct(closeV)}. La apertura queda en ${pct(openV)}: no es un extremo inferior.`;
+    }else{ vc="now"; vl="Ventana sin posición en el ciclo";
+      vw=`Desvío al abrir ${pct(openV)} y en cierre ${pct(closeV)}: ambos próximos a la tendencia. El ${pct(m)} corresponde a la tendencia, no a estacionalidad.`;
+    }
+
+    const bw=bars(hist,"win",false), ba=bars(hist,"ann",true);
+    $("#e-out").innerHTML=`<div class="card">
+      <div class="card-title"><div class="t">ESTACIONALIDAD SERIE · ${tk}</div>
+        <div class="m">${lbl(a)} → ${lbl(b)} · ${days} días · ${hist.length} años</div></div>
+      <div class="verdict">
+        <div class="vk">VENTANA</div><div class="vl ${vc}">${vl}</div><div class="vw">${vw}</div>
+        <div class="ledger">
+          <div class="led"><div class="led-k">RETORNO MEDIO</div><div class="led-v ${m>=0?'pos':'neg'}">${pct(m)}</div></div>
+          <div class="led"><div class="led-k">TENDENCIA DEL PERÍODO</div><div class="led-v">${pct(expected)}</div></div>
+          <div class="led"><div class="led-k">COMPONENTE ESTACIONAL</div><div class="led-v ${m-expected>0?'pos':'neg'}">${pct(m-expected)}</div></div>
+        </div>
+      </div>
+      <div class="resumen"><h4>RESUMEN</h4>${resumenSerie(tk,P,a,b,openV,closeV,m,expected,pos,hist.length,sd,split,days).map(x=>`<p>${x}</p>`).join("")}</div>
+      <div class="chart">${chart(P,M,a,b,[{d:a,t:"abre"},{d:b,t:"cierra"}])}</div>
+      ${LEGEND}
+      <div class="stats">
+        <div class="stat"><div class="stat-k">DESVÍO AL ABRIR</div><div class="stat-v" style="color:${openV<0?'var(--neg)':'var(--pos)'}">${pct(openV)}</div><div class="stat-n">${lbl(a)}</div></div>
+        <div class="stat"><div class="stat-k">DESVÍO AL CERRAR</div><div class="stat-v" style="color:${closeV<0?'var(--neg)':'var(--pos)'}">${pct(closeV)}</div><div class="stat-n">${lbl(b)}</div></div>
+        <div class="stat"><div class="stat-k">AÑOS POSITIVOS</div><div class="stat-v">${pos}/${hist.length}</div><div class="stat-n">retorno de ventana</div></div>
+        <div class="stat"><div class="stat-k">DESVÍO ESTÁNDAR</div><div class="stat-v">${num(sd)}%</div><div class="stat-n">entre años</div></div>
+        <div class="stat"><div class="stat-k">CORRELACIÓN r</div><div class="stat-v" style="color:${split.r>=.3?'var(--pos)':'var(--neg)'}">${num(split.r)}</div><div class="stat-n">submuestra 1 vs 2</div></div>
+      </div>
+      <details open><summary>SERIE ANUAL</summary>
+        <table><thead><tr><th>AÑO</th><th>VENTANA</th><th>AÑO CAL.</th><th style="text-align:center">VENTANA · AÑO</th></tr></thead><tbody>
+        ${hist.map((h,i)=>`<tr>
+          <td>${h.year}</td>
+          <td style="color:var(--navy);font-weight:600">${pct(h.win)}</td>
+          <td style="color:${h.ann>=0?'var(--verde)':'var(--rojo)'}">${pct(h.ann,1)}</td>
+          <td class="bar"><div class="barw">${bw[i]}</div><div class="barw" style="opacity:.45;margin-top:2px">${ba[i]}</div></td>
+        </tr>`).join("")}
+        </tbody></table>
+      </details>
+      <div class="actions"><button class="btn ghost" data-pdf="serie:${tk}">PDF</button><button class="btn" data-tg="serie:${tk}">Telegram</button></div>
+    </div>`;
+    RES.set(`serie:${tk}`,{kind:"serie",tk,P,M,a,b,openV,closeV,m,expected,pos,hist,sd,split,days,line:vl,why:vw});
+    status(WORKER_URL?"":"Modo demo · serie simulada, no de mercado.");
+  }catch(e){
+    $("#e-out").innerHTML=`<div class="card"><div class="empty err">${e.message}</div></div>`;
+    status("");
+  }
+  $("#e-go").disabled=false;
+}
+const shiftY=(s,d)=>`${+s.slice(0,4)+d}-${s.slice(5)}`;
+function idxAfter(a,t){let lo=0,hi=a.length;while(lo<hi){const m=(lo+hi)>>1;if(a[m]<t)lo=m+1;else hi=m}return lo<a.length?lo:-1}
+function idxBefore(a,t){let lo=0,hi=a.length;while(lo<hi){const m=(lo+hi)>>1;if(a[m]<=t)lo=m+1;else hi=m}return lo-1}
+
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x===t));
+  $("#pane-scan").hidden=t.dataset.tab!=="scan";
+  $("#pane-serie").hidden=t.dataset.tab!=="serie";
+  status("");
+});
+$("#s-go").onclick=runScan;
+$("#e-go").onclick=runSerie;
+
+// La clave de RES es "scan:IVV" o "serie:IVV", no "IVV" a secas: si fuera sólo
+// el ticker, correr SERIE sobre IVV borraría el SCAN de IVV y el botón de la
+// tarjeta de SCAN bajaría el informe de SERIE.
+function nombrePDF(key){
+  const r=RES.get(key);
+  if(!r) return "informe.pdf";
+  // Telegram corta el nombre por el medio: SCAN/SERIE tiene que ir al principio.
+  return `${r.kind==="serie"?"SERIE":"SCAN"}-${r.tk}.pdf`;
+}
+
+function makePDF(key){
+  const r=RES.get(key);
+  if(!r) return null;
+  const tk=r.tk;
+  if(r.kind==="scan"){
+    const {P,D,split,perm,amp}=r;
+    return buildPDF("scan",tk,P,D,split,perm,amp,resumenScan(tk,P,D,split,perm,amp),{
+      meta:`${P.years[0]}-${P.years.at(-1)} · ${P.years.length} anos · tendencia ${pct(P.drift,1)}/ano`,
+      line:D.line, why:D.why,
+      boxes:D.action==="none"?null:[
+        {k:"DESCUENTO ESTACIONAL",v:pct(D.discount),c:RGB.navy,e:"lo que baja el precio si esperas hasta esa fecha"},
+        {k:"TENDENCIA DEL PERIODO",v:pct(-D.driftCost),c:RGB.red,e:"lo que sube el fondo mientras esperas"},
+        {k:"NETO",v:pct(D.net),c:D.net>0?RGB.navy:RGB.red,e:"la resta. Positivo: conviene esperar"}],
+      stats:[
+        {k:"MINIMO DEL CICLO",v:lblES(D.gmnD),c:RGB.red,e:"el dia mas barato del ano frente a su propia tendencia"},
+        {k:"MAXIMO DEL CICLO",v:lblES(D.gmxD),c:RGB.navy,e:"el dia mas caro del ano frente a su propia tendencia"},
+        {k:"AMPLITUD",v:num(amp)+"%",e:"cuanto separa al dia mas barato del mas caro"},
+        {k:"CORRELACION r",v:num(split.r),c:split.r>=.3?RGB.navy:RGB.red,
+         e:"cuanto se parece la primera mitad de la muestra a la segunda. Bajo 0.30 no hay patron estable"},
+        {k:"p-VALOR",v:num(perm.p,3),c:(perm.p+perm.ci)<=.1?RGB.navy:RGB.red,
+         e:`de cada 100 calendarios barajados al azar, ${(perm.p*100).toFixed(0)} dieron una forma igual o mas marcada. Sobre 10 es ruido`}],
+      footer:(WORKER_URL?"":"Modo demo · serie simulada · ")+"Generado "+iso(new Date())+" · no constituye asesoramiento de inversion"});
+  }
+  const {P,M,a,b,openV,closeV,m,expected,pos,hist,sd,split,days,line,why}=r;
+  return buildPDF("serie",tk,P,M,split,null,0,
+    resumenSerie(tk,P,a,b,openV,closeV,m,expected,pos,hist.length,sd,split,days),{
+    meta:`${lblES(a)} - ${lblES(b)} · ${days} dias · ${hist.length} anos`,
+    line, why,
+    edges:[{d:a,t:"abre"},{d:b,t:"cierra"}], shade:[a,b],
+    boxes:[
+      {k:"RETORNO MEDIO",v:pct(m),c:m>=0?RGB.navy:RGB.red,e:`lo que rindio esta ventana, promedio de ${hist.length} anos`},
+      {k:"TENDENCIA DEL PERIODO",v:pct(expected),e:"lo que hubiera rendido cualquier ventana de igual duracion"},
+      {k:"COMPONENTE ESTACIONAL",v:pct(m-expected),c:m-expected>0?RGB.navy:RGB.red,e:"lo unico atribuible al calendario. El resto lo ganabas igual"}],
+    stats:[
+      {k:"DESVIO AL ABRIR",v:pct(openV),c:Math.abs(openV)<0.005?RGB.ink2:(openV<0?RGB.navy:RGB.red),
+       e:Math.abs(openV)<0.005?"el precio suele estar sobre su propia tendencia: ni prima ni descuento"
+         :openV<0?"entras con descuento: el precio suele estar por debajo de su tendencia":"entras pagando una prima: el precio suele estar por encima de su tendencia"},
+      {k:"DESVIO AL CERRAR",v:pct(closeV),c:Math.abs(closeV)<0.005?RGB.ink2:(closeV<0?RGB.navy:RGB.red),
+       e:Math.abs(closeV)<0.005?"el precio suele estar sobre su propia tendencia: ni prima ni descuento"
+         :closeV>0?"salis con prima: el precio suele estar por encima de su tendencia":"salis con descuento: el precio suele estar por debajo de su tendencia"},
+      {k:"ANOS POSITIVOS",v:pos+"/"+hist.length,e:"cuantos anos cerraron la ventana en verde"},
+      {k:"DESVIO ESTANDAR",v:num(sd)+"%",
+       e:sd>Math.abs(m)*2?`cuanto se aleja un ano cualquiera del promedio. Aca es mas del doble: el promedio describe mal`:"cuanto se aleja un ano cualquiera del promedio"},
+      {k:"CORRELACION r",v:num(split.r),c:split.r>=.3?RGB.navy:RGB.red,
+       e:"cuanto se parece la primera mitad de la muestra a la segunda. Bajo 0.30 no hay patron estable"}],
+    table:hist,
+    footer:(WORKER_URL?"":"Modo demo · serie simulada · ")+"Generado "+iso(new Date())+" · no constituye asesoramiento de inversion"});
+}
+
+document.addEventListener("click",async e=>{
+  const key=e.target.dataset.pdf||e.target.dataset.tg;
+  if(!key) return;
+  let doc;
+  try{ doc=makePDF(key) }
+  catch(err){ return status(`<span class="err">No se pudo generar el PDF: ${err.message}</span>`) }
+  if(!doc) return status(`<span class="err">Correr el análisis primero.</span>`);
+  if(e.target.dataset.pdf){
+    doc.save(nombrePDF(key));
+    return status("PDF descargado · Letter 8.5×11in, vectorial");
+  }
+  if(!WORKER_URL) return status(`<span class="err">Telegram necesita el Worker: el bot token no puede residir en el navegador.</span>`);
+  status("Enviando…");
+  try{
+    const b64=doc.output("datauristring").split(",")[1];
+    const r=await fetch(`${WORKER_URL}/telegram`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({filename:nombrePDF(key),pdf:b64,caption:`${RES.get(key).kind==="serie"?"SERIE":"SCAN"} · ${RES.get(key).tk} · ${RES.get(key).line||""}`})});
+    status(r.ok?"Enviado a Telegram":`<span class="err">Telegram: HTTP ${r.status}</span>`);
+  }catch(err){ status(`<span class="err">${err.message}</span>`) }
+});
+status("Modo demo · serie simulada, no de mercado.");
+</script>
